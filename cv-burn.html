@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clique sur le CV pour l'ouvrir</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --fire1: #FF4500;
+    --fire2: #FF8C00;
+    --fire3: #FFD700;
+    --ash: #333;
+  }
+
+  body {
+    background: #0a0a0a;
+    color: #f0f0f0;
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .scene {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    z-index: 1;
+  }
+
+  .title-top {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.2rem, 6vw, 5rem);
+    letter-spacing: 0.08em;
+    color: #f0f0f0;
+    text-align: center;
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.3s;
+  }
+  .title-top span { color: var(--fire1); }
+
+  .wallet-wrap {
+    position: relative;
+    width: 220px;
+    height: 150px;
+    cursor: pointer;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.6s;
+    transform-origin: center bottom;
+    transition: transform 0.3s ease;
+  }
+  .wallet-wrap:hover { transform: scale(1.05) translateY(-4px); }
+
+  .wallet-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6));
+  }
+
+  .cv-paper {
+    position: absolute;
+    top: -38px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-3deg);
+    width: 100px;
+    background: #f5f0e8;
+    border-radius: 3px;
+    padding: 8px 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    transform-origin: bottom center;
+    z-index: 10;
+  }
+  .cv-paper:hover {
+    transform: translateX(-50%) rotate(-3deg) translateY(-6px) scale(1.04);
+  }
+  .cv-paper .cv-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    color: #222;
+    letter-spacing: 0.1em;
+    text-align: center;
+    display: block;
+  }
+  .cv-line {
+    height: 2px;
+    background: #ccc;
+    border-radius: 2px;
+    margin: 4px 0;
+  }
+  .cv-line.short { width: 60%; }
+
+  .hint {
+    margin-top: 1.2rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #555;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 1s;
+  }
+
+  #fire-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  #fire-canvas.active { opacity: 1; }
+
+  #burn-overlay {
+    position: fixed;
+    inset: 0;
+    background: #0a0a0a;
+    z-index: 40;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1.5s ease;
+  }
+
+  #final-msg {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+    opacity: 0;
+    pointer-events: none;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .ash {
+    position: fixed;
+    border-radius: 50%;
+    background: #555;
+    pointer-events: none;
+    z-index: 55;
+    animation: ashFall linear forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes ashFall {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+    100% { transform: translateY(120vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* ─── FINAL MESSAGE STYLES ─── */
+  .wallet-concept {
+    margin-bottom: 1.8rem;
+    text-align: center;
+  }
+  .wallet-open-label {
+    font-size: clamp(0.9rem, 2.2vw, 1.1rem);
+    color: #888;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+  }
+  .wallet-open-label.small { font-size: clamp(0.78rem, 1.8vw, 0.95rem); }
+  .highlight { color: var(--fire2); font-weight: 500; }
+
+  .flyer {
+    background: #f5f0e8;
+    color: #111;
+    border-radius: 6px;
+    padding: 2rem 2.5rem;
+    max-width: 420px;
+    width: 90vw;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(255,100,0,0.25), 0 20px 60px rgba(0,0,0,0.6);
+    position: relative;
+    overflow: hidden;
+  }
+  .flyer::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--fire1), var(--fire2), var(--fire3));
+  }
+
+  .flyer-top-tag {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    color: var(--fire1);
+    margin-bottom: 1rem;
+  }
+
+  .flyer-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.2rem;
+  }
+  .flyer-arabic {
+    font-size: clamp(1.1rem, 3.5vw, 1.5rem);
+    font-weight: 500;
+    color: #111;
+    direction: rtl;
+  }
+  .flyer-amp { color: #aaa; font-size: 1rem; }
+
+  .flyer-offer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    background: #111;
+    border-radius: 4px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.2rem;
+  }
+  .flyer-percent {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    color: var(--fire2);
+    line-height: 1;
+  }
+  .flyer-offer-text {
+    font-size: clamp(0.75rem, 2vw, 0.88rem);
+    color: #ccc;
+    text-align: left;
+    line-height: 1.5;
+  }
+
+  .flyer-divider { height: 1px; background: #ddd; margin: 1rem 0; }
+
+  .flyer-me {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    letter-spacing: 0.15em;
+    color: #111;
+    margin-bottom: 1rem;
+  }
+
+  .flyer-contact { display: flex; flex-direction: column; gap: 0.5rem; }
+  .contact-link {
+    font-size: clamp(0.82rem, 2vw, 0.95rem);
+    color: #333;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    transition: background 0.2s, color 0.2s;
+    display: block;
+  }
+  .contact-link:hover {
+    background: #111;
+    color: var(--fire2);
+    border-color: #111;
+  }
+</style>
+</head>
+<body>
+
+<div class="scene" id="scene">
+  <div class="title-top">Clique sur le <span>CV</span><br>pour l'ouvrir</div>
+
+  <div class="wallet-wrap" id="wallet" title="Clique sur le CV">
+    <div class="cv-paper" id="cv-paper" onclick="burnCV(event)">
+      <span class="cv-label">CV</span>
+      <div class="cv-line"></div>
+      <div class="cv-line short"></div>
+      <div class="cv-line"></div>
+      <div class="cv-line short"></div>
+    </div>
+
+    <svg class="wallet-svg" viewBox="0 0 220 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="40" width="200" height="100" rx="10" fill="#3a2a1a" stroke="#5a3e28" stroke-width="1.5"/>
+      <rect x="10" y="40" width="200" height="55" rx="10" fill="#4e3520" stroke="#6b4f30" stroke-width="1"/>
+      <circle cx="110" cy="50" r="5" fill="#6b4f30" stroke="#8a6a45" stroke-width="1"/>
+      <rect x="30" y="100" width="70" height="28" rx="4" fill="#3a2a1a" stroke="#5a3e28" stroke-width="1"/>
+      <rect x="120" y="100" width="70" height="28" rx="4" fill="#3a2a1a" stroke="#5a3e28" stroke-width="1"/>
+      <line x1="18" y1="50" x2="18" y2="132" stroke="#5a3e28" stroke-dasharray="4 4" stroke-width="0.8"/>
+      <line x1="202" y1="50" x2="202" y2="132" stroke="#5a3e28" stroke-dasharray="4 4" stroke-width="0.8"/>
+    </svg>
+  </div>
+
+  <div class="hint">↑ clique sur le CV pour l'ouvrir</div>
+</div>
+
+<canvas id="fire-canvas"></canvas>
+<div id="burn-overlay"></div>
+
+<div id="final-msg">
+  <div class="wallet-concept">
+    <div class="wallet-open-label">Tu vois ? Comme le portefeuille avec <span class="highlight">200 dh</span>…</div>
+    <div class="wallet-open-label small">Tu l'ouvres, tu tires le billet — et c'est pas un CV.</div>
+    <div class="wallet-open-label small">C'est un <span class="highlight">flyer.</span></div>
+  </div>
+
+  <div class="flyer">
+    <div class="flyer-top-tag">OFFRE EXCLUSIVE</div>
+    <div class="flyer-main">
+      <span class="flyer-arabic">بصحتك المِلَفّ</span>
+      <span class="flyer-amp">&</span>
+      <span class="flyer-arabic">Moi, le Candidat Créatif بصحتك</span>
+    </div>
+    <div class="flyer-offer">
+      <span class="flyer-percent">100%</span>
+      <span class="flyer-offer-text">créativité · <br>100% impact</span>
+    </div>
+    <div class="flyer-divider"></div>
+    <div class="flyer-me">C'est juste moi.</div>
+    <div class="flyer-contact">
+      <a href="tel:0635869767" class="contact-link">📞 06 35 86 97 67</a>
+      <a href="https://www.linkedin.com/in/salmaelmabrouki/" target="_blank" class="contact-link">🔗 LinkedIn : Salma El Mabrouki</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('fire-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [], running = false;
+let rafId;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+class Particle {
+  constructor(x, y, type) {
+    this.x = x; this.y = y; this.type = type;
+    if (type === 'fire') {
+      this.vx = (Math.random() - 0.5) * 3;
+      this.vy = -(Math.random() * 5 + 3);
+      this.life = Math.random() * 0.8 + 0.4;
+      this.maxLife = this.life;
+      this.size = Math.random() * 18 + 6;
+    } else {
+      this.vx = (Math.random() - 0.5) * 6;
+      this.vy = -(Math.random() * 8 + 2);
+      this.life = Math.random() * 1.2 + 0.5;
+      this.maxLife = this.life;
+      this.size = Math.random() * 4 + 2;
+      this.gravity = 0.15;
+    }
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    if (this.type === 'ember') {
+      this.vy += this.gravity;
+      this.vx += (Math.random() - 0.5) * 0.3;
+    } else {
+      this.vx += (Math.random() - 0.5) * 0.4;
+      this.size *= 0.97;
+    }
+    this.life -= 0.02;
+  }
+  draw() {
+    const t = Math.max(0, this.life / this.maxLife);
+    if (this.type === 'fire') {
+      const g = Math.floor(t * t * 200);
+      ctx.save();
+      const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+      grad.addColorStop(0, `rgba(255,${g},0,${t * 0.9})`);
+      grad.addColorStop(0.5, `rgba(255,80,0,${t * 0.5})`);
+      grad.addColorStop(1, `rgba(255,20,0,0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(this.x, this.y, this.size * 0.7, this.size, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    } else {
+      const g = Math.floor(t * 180);
+      ctx.save();
+      ctx.globalAlpha = t;
+      ctx.fillStyle = `rgb(255,${g},0)`;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+let fireX, fireY, fireIntensity = 0, maxIntensity = 100;
+
+function spawnFire() {
+  if (!running) return;
+  for (let i = 0; i < Math.floor(fireIntensity * 0.4); i++) {
+    const x = fireX + (Math.random() - 0.5) * 60 * (fireIntensity / maxIntensity);
+    const y = fireY + (Math.random() - 0.5) * 20;
+    particles.push(new Particle(x, y, 'fire'));
+  }
+  if (Math.random() < 0.3 * (fireIntensity / maxIntensity))
+    particles.push(new Particle(fireX + (Math.random() - 0.5) * 40, fireY, 'ember'));
+  if (fireIntensity < maxIntensity) fireIntensity = Math.min(fireIntensity + 2, maxIntensity);
+}
+
+function loop() {
+  ctx.clearRect(0, 0, W, H);
+  spawnFire();
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => { p.update(); p.draw(); });
+  rafId = requestAnimationFrame(loop);
+}
+
+function spawnAsh() {
+  for (let i = 0; i < 30; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'ash';
+      const sz = Math.random() * 5 + 2;
+      el.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}vw;top:-10px;animation-duration:${Math.random()*4+3}s;animation-delay:${Math.random()*2}s;opacity:${Math.random()*0.6+0.2};`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 7000);
+    }, i * 100);
+  }
+}
+
+function burnCV(e) {
+  if (running) return;
+  e.stopPropagation();
+  const paper = document.getElementById('cv-paper');
+  const rect = paper.getBoundingClientRect();
+  fireX = rect.left + rect.width / 2;
+  fireY = rect.top + rect.height / 2;
+  running = true;
+  canvas.classList.add('active');
+  loop();
+
+  let shakes = 0;
+  paper.style.transition = 'none';
+  const shake = setInterval(() => {
+    const r = (Math.random() - 0.5) * 8;
+    paper.style.transform = `translateX(-50%) rotate(${-3+r}deg) translateY(${(Math.random()-0.5)*4}px)`;
+    if (++shakes > 15) clearInterval(shake);
+  }, 60);
+
+  setTimeout(() => {
+    paper.style.transition = 'all 1.5s ease';
+    paper.style.opacity = '0';
+    paper.style.transform = 'translateX(-50%) rotate(-3deg) translateY(-30px) scale(0.5)';
+  }, 800);
+
+  setTimeout(() => {
+    document.getElementById('scene').style.transition = 'opacity 1s ease';
+    document.getElementById('scene').style.opacity = '0';
+    spawnAsh();
+  }, 1200);
+
+  setTimeout(() => {
+    document.getElementById('burn-overlay').style.opacity = '1';
+  }, 1800);
+
+  setTimeout(() => {
+    cancelAnimationFrame(rafId);
+    canvas.classList.remove('active');
+    running = false;
+    const msg = document.getElementById('final-msg');
+    msg.style.transition = 'opacity 1.2s ease';
+    msg.style.opacity = '1';
+    msg.style.pointerEvents = 'auto';
+    spawnAsh();
+  }, 3200);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') document.getElementById('cv-paper').click();
+});
+</script>
+</body>
+</html>
